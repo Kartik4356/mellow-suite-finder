@@ -19,6 +19,7 @@ import { Route as RoomsIdRouteImport } from './routes/rooms.$id'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedMyBookingsRouteImport } from './routes/_authenticated/my-bookings'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAddGuestRouteImport } from './routes/_authenticated/add-guest'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
@@ -73,6 +74,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAddGuestRoute = AuthenticatedAddGuestRouteImport.update({
+  id: '/add-guest',
+  path: '/add-guest',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/rooms': typeof RoomsRouteWithChildren
+  '/add-guest': typeof AuthenticatedAddGuestRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/my-bookings': typeof AuthenticatedMyBookingsRoute
   '/staff': typeof AuthenticatedStaffRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/add-guest': typeof AuthenticatedAddGuestRoute
   '/my-bookings': typeof AuthenticatedMyBookingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/rooms/$id': typeof RoomsIdRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/rooms': typeof RoomsRouteWithChildren
+  '/_authenticated/add-guest': typeof AuthenticatedAddGuestRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/my-bookings': typeof AuthenticatedMyBookingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/rooms'
+    | '/add-guest'
     | '/admin'
     | '/my-bookings'
     | '/staff'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/add-guest'
     | '/my-bookings'
     | '/staff'
     | '/rooms/$id'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/rooms'
+    | '/_authenticated/add-guest'
     | '/_authenticated/admin'
     | '/_authenticated/my-bookings'
     | '/_authenticated/staff'
@@ -267,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/add-guest': {
+      id: '/_authenticated/add-guest'
+      path: '/add-guest'
+      fullPath: '/add-guest'
+      preLoaderRoute: typeof AuthenticatedAddGuestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/'
@@ -316,12 +335,14 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAddGuestRoute: typeof AuthenticatedAddGuestRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedMyBookingsRoute: typeof AuthenticatedMyBookingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAddGuestRoute: AuthenticatedAddGuestRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedMyBookingsRoute: AuthenticatedMyBookingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
@@ -352,3 +373,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
