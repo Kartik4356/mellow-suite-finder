@@ -40,6 +40,7 @@ export function SiteHeader() {
           {!(isStaff && !isAdmin) && <NavLink to="/about" label="About" />}
           {user && !(isStaff && !isAdmin) && <NavLink to="/my-bookings" label="My Stays" />}
           {isStaff && <NavLink to="/staff" label="Front Desk" />}
+          {isStaff && <NavLink to="/add-guest" label="Add Guest" />}
           {isAdmin && <NavLink to="/admin" label="Admin" />}
         </nav>
 

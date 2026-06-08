@@ -1,13 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/hooks/useSettings";
-import { formatCurrency, formatDate, nightsBetween } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -19,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/staff")({
 const STATUSES = ["pending", "confirmed", "checked_in", "checked_out", "cancelled"] as const;
 
 function StaffPage() {
-  const { isStaff, loading, user } = useAuth();
+  const { isStaff, loading } = useAuth();
   const settings = useSettings();
   const qc = useQueryClient();
 
@@ -42,16 +39,6 @@ function StaffPage() {
       return data ?? [];
     },
     enabled: isStaff,
-  });
-
-  const [form, setForm] = useState({
-    room_id: "",
-    guest_name: "",
-    guest_email: "",
-    check_in: "",
-    check_out: "",
-    guests: 1,
-    notes: "",
   });
 
   if (loading) return <div className="container-narrow py-16 text-muted-foreground">Loading…</div>;
@@ -79,47 +66,52 @@ function StaffPage() {
       .filter((b: any) => (b.status === "checked_in" || b.status === "confirmed") && b.check_in <= today && b.check_out > today)
       .map((b: any) => b.room_id)
   );
-  const totalRooms = rooms?.length ?? 0;
-  const vacantRooms = Math.max(0, totalRooms - occupiedRoomIds.size);
 
-  const submitBooking = async () => {
-    if (!form.room_id || !form.guest_name || !form.guest_email || !form.check_in || !form.check_out) {
-      toast.error("Please fill all required fields."); return;
-    }
-    const nights = nightsBetween(form.check_in, form.check_out);
-    if (nights < 1) { toast.error("Check-out must be after check-in."); return; }
-    const room = rooms?.find((r: any) => r.id === form.room_id);
-    if (!room) { toast.error("Select a room."); return; }
-    const total_price = Number(room.price_per_night) * nights;
-    const { error } = await supabase.from("bookings").insert({
-      user_id: user!.id,
-      room_id: form.room_id,
-      guest_name: form.guest_name,
-      guest_email: form.guest_email,
-      check_in: form.check_in,
-      check_out: form.check_out,
-      guests: form.guests,
-      notes: form.notes || null,
-      total_price,
-      status: "confirmed",
-    });
-    if (error) { toast.error(error.message); return; }
-    toast.success("Guest booking added.");
-    setForm({ room_id: "", guest_name: "", guest_email: "", check_in: "", check_out: "", guests: 1, notes: "" });
-    qc.invalidateQueries({ queryKey: ["all_bookings"] });
-  };
+  // Group rooms by type (name) with vacancy counts
+  const byType = new Map<string, { total: number; vacant: number; price: number }>();
+  for (const r of rooms ?? []) {
+    const t = byType.get(r.name) ?? { total: 0, vacant: 0, price: Number(r.price_per_night) };
+    t.total += 1;
+    if (!occupiedRoomIds.has(r.id)) t.vacant += 1;
+    byType.set(r.name, t);
+  }
+  const totalRooms = rooms?.length ?? 0;
+  const totalVacant = Math.max(0, totalRooms - occupiedRoomIds.size);
 
   return (
     <div className="container-narrow py-12">
-      <p className="eyebrow">Operations</p>
-      <h1 className="mt-2 font-serif text-5xl">Front Desk</h1>
-      <p className="mt-2 text-muted-foreground">Manage reservations, check-ins, and check-outs.</p>
-
-      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <div className="rounded-lg border border-primary/40 bg-primary/5 p-4">
-          <p className="eyebrow">Vacant rooms</p>
-          <p className="mt-1 font-serif text-3xl">{vacantRooms}<span className="text-base text-muted-foreground">/{totalRooms}</span></p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Operations</p>
+          <h1 className="mt-2 font-serif text-5xl">Front Desk</h1>
+          <p className="mt-2 text-muted-foreground">Manage reservations, check-ins, and check-outs.</p>
         </div>
+        <Button asChild><Link to="/add-guest">+ Add Guest</Link></Button>
+      </div>
+
+      <div className="mt-8 rounded-lg border border-primary/40 bg-primary/5 p-5">
+        <div className="flex items-baseline justify-between">
+          <p className="eyebrow">Vacant rooms by type</p>
+          <p className="text-sm text-muted-foreground">{totalVacant} of {totalRooms} available</p>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[...byType.entries()].map(([name, t]) => (
+            <div key={name} className="rounded-md border border-border bg-card p-4">
+              <div className="flex items-center justify-between">
+                <p className="font-medium">{name}</p>
+                <span className={`rounded-full px-2 py-0.5 text-xs ${t.vacant > 0 ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  {t.vacant > 0 ? "Available" : "Full"}
+                </span>
+              </div>
+              <p className="mt-2 font-serif text-3xl">{t.vacant}<span className="text-base text-muted-foreground">/{t.total}</span></p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(t.price, settings.currency)}/night</p>
+            </div>
+          ))}
+          {byType.size === 0 && <p className="text-sm text-muted-foreground">No rooms configured.</p>}
+        </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
         {STATUSES.map((s) => (
           <div key={s} className="rounded-lg border border-border bg-card p-4">
             <p className="eyebrow">{s.replace("_", " ")}</p>
@@ -127,51 +119,6 @@ function StaffPage() {
           </div>
         ))}
       </div>
-
-      <section className="mt-10 rounded-lg border border-border bg-card p-6">
-        <h2 className="font-serif text-2xl">Add guest details</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Create a reservation on behalf of a walk-in or phone guest.</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label>Guest name</Label>
-            <Input value={form.guest_name} onChange={(e) => setForm({ ...form, guest_name: e.target.value })} />
-          </div>
-          <div>
-            <Label>Guest email</Label>
-            <Input type="email" value={form.guest_email} onChange={(e) => setForm({ ...form, guest_email: e.target.value })} />
-          </div>
-          <div>
-            <Label>Room</Label>
-            <Select value={form.room_id} onValueChange={(v) => setForm({ ...form, room_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Select a room" /></SelectTrigger>
-              <SelectContent>
-                {rooms?.map((r: any) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name} — {formatCurrency(r.price_per_night, settings.currency)}/night
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Guests</Label>
-            <Input type="number" min={1} value={form.guests} onChange={(e) => setForm({ ...form, guests: Number(e.target.value) })} />
-          </div>
-          <div>
-            <Label>Check-in</Label>
-            <Input type="date" value={form.check_in} onChange={(e) => setForm({ ...form, check_in: e.target.value })} />
-          </div>
-          <div>
-            <Label>Check-out</Label>
-            <Input type="date" value={form.check_out} onChange={(e) => setForm({ ...form, check_out: e.target.value })} />
-          </div>
-          <div className="sm:col-span-2">
-            <Label>Notes</Label>
-            <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
-        </div>
-        <Button className="mt-5" onClick={submitBooking}>Save booking</Button>
-      </section>
 
       <div className="mt-10 overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
