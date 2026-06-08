@@ -1,9 +1,9 @@
-export function formatCurrency(amount: number | string, currency = "USD") {
+export function formatCurrency(amount: number | string, currency = "INR") {
   const n = typeof amount === "string" ? Number(amount) : amount;
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(n);
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 0 }).format(n);
   } catch {
-    return `$${n.toFixed(0)}`;
+    return `₹${n.toFixed(0)}`;
   }
 }
 
