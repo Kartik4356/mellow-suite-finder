@@ -36,9 +36,9 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-8 md:flex">
           <NavLink to="/" label="Home" />
-          <NavLink to="/rooms" label="Rooms" />
-          <NavLink to="/about" label="About" />
-          {user && <NavLink to="/my-bookings" label="My Stays" />}
+          {!(isStaff && !isAdmin) && <NavLink to="/rooms" label="Rooms" />}
+          {!(isStaff && !isAdmin) && <NavLink to="/about" label="About" />}
+          {user && !(isStaff && !isAdmin) && <NavLink to="/my-bookings" label="My Stays" />}
           {isStaff && <NavLink to="/staff" label="Front Desk" />}
           {isAdmin && <NavLink to="/admin" label="Admin" />}
         </nav>
