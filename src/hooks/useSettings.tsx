@@ -16,7 +16,7 @@ const DEFAULTS: AppSettings = {
   theme_primary: "#8b6f47",
   theme_accent: "#c9a86a",
   subscription_plan: "starter",
-  currency: "USD",
+  currency: "INR",
 };
 
 export function useSettings() {
