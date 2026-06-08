@@ -36,6 +36,26 @@ function AdminSettings() {
     },
   });
 
+  const { data: roomsList } = useQuery({
+    queryKey: ["admin_rooms_summary"],
+    queryFn: async () => {
+      const { data } = await supabase.from("rooms").select("id,name,is_active");
+      return data ?? [];
+    },
+  });
+
+  const roomTypes = (() => {
+    const map = new Map<string, { total: number; active: number }>();
+    for (const r of roomsList ?? []) {
+      const cur = map.get(r.name) ?? { total: 0, active: 0 };
+      cur.total += 1;
+      if (r.is_active) cur.active += 1;
+      map.set(r.name, cur);
+    }
+    return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
+  })();
+  const totalRooms = roomsList?.length ?? 0;
+
   const [form, setForm] = useState<any>(null);
   useEffect(() => { if (settings) setForm(settings); }, [settings]);
 
