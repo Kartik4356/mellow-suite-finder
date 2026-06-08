@@ -82,6 +82,34 @@ function AdminSettings() {
           onClick={() => save({ hotel_name: form.hotel_name, tagline: form.tagline, currency: form.currency })}>
           Save branding
         </Button>
+
+        <div className="mt-8 border-t border-border pt-6">
+          <div className="flex items-baseline justify-between">
+            <h3 className="font-serif text-xl">Room inventory</h3>
+            <p className="text-sm text-muted-foreground">Total rooms: <span className="font-medium text-foreground">{totalRooms}</span></p>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">Overview of room types and counts in your property.</p>
+          {roomTypes.length === 0 ? (
+            <p className="mt-4 text-sm text-muted-foreground">No rooms yet. Add rooms from the Rooms tab.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border bg-secondary/40 text-left">
+                  <tr><th className="p-3">Room type</th><th className="p-3">Total</th><th className="p-3">Active</th></tr>
+                </thead>
+                <tbody>
+                  {roomTypes.map((t) => (
+                    <tr key={t.name} className="border-b border-border last:border-0">
+                      <td className="p-3 font-medium">{t.name}</td>
+                      <td className="p-3">{t.total}</td>
+                      <td className="p-3">{t.active}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Theme */}
