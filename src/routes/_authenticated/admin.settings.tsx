@@ -40,7 +40,7 @@ function AdminSettings() {
   useEffect(() => { if (settings) setForm(settings); }, [settings]);
 
   const save = async (patch: Record<string, any>) => {
-    const { error } = await supabase.from("app_settings").update(patch).eq("id", "global");
+    const { error } = await supabase.from("app_settings").update(patch as any).eq("id", "global");
     if (error) return toast.error(error.message);
     toast.success("Settings saved.");
     qc.invalidateQueries({ queryKey: ["app_settings"] });

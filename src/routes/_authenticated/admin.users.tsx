@@ -37,10 +37,10 @@ function AdminUsers() {
       if (userId === me?.id && role === "admin") {
         return toast.error("You can't remove your own admin role.");
       }
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role as any);
       if (error) return toast.error(error.message);
     } else {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
       if (error) return toast.error(error.message);
     }
     toast.success("Roles updated.");
