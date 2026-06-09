@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RoomsRouteImport } from './routes/rooms'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -18,16 +19,23 @@ import { Route as RoomsIndexRouteImport } from './routes/rooms.index'
 import { Route as RoomsIdRouteImport } from './routes/rooms.$id'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedMyBookingsRouteImport } from './routes/_authenticated/my-bookings'
+import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAddGuestRouteImport } from './routes/_authenticated/add-guest'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 import { Route as AuthenticatedAdminRoomsRouteImport } from './routes/_authenticated/admin.rooms'
+import { Route as AuthenticatedAdminPhotosRouteImport } from './routes/_authenticated/admin.photos'
 
 const RoomsRoute = RoomsRouteImport.update({
   id: '/rooms',
   path: '/rooms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -69,6 +77,12 @@ const AuthenticatedMyBookingsRoute = AuthenticatedMyBookingsRouteImport.update({
   path: '/my-bookings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedChangePasswordRoute =
+  AuthenticatedChangePasswordRouteImport.update({
+    id: '/change-password',
+    path: '/change-password',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -100,18 +114,27 @@ const AuthenticatedAdminRoomsRoute = AuthenticatedAdminRoomsRouteImport.update({
   path: '/rooms',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminPhotosRoute =
+  AuthenticatedAdminPhotosRouteImport.update({
+    id: '/photos',
+    path: '/photos',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rooms': typeof RoomsRouteWithChildren
   '/add-guest': typeof AuthenticatedAddGuestRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/my-bookings': typeof AuthenticatedMyBookingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/rooms/$id': typeof RoomsIdRoute
   '/rooms/': typeof RoomsIndexRoute
+  '/admin/photos': typeof AuthenticatedAdminPhotosRoute
   '/admin/rooms': typeof AuthenticatedAdminRoomsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -121,11 +144,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/add-guest': typeof AuthenticatedAddGuestRoute
+  '/change-password': typeof AuthenticatedChangePasswordRoute
   '/my-bookings': typeof AuthenticatedMyBookingsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/rooms/$id': typeof RoomsIdRoute
   '/rooms': typeof RoomsIndexRoute
+  '/admin/photos': typeof AuthenticatedAdminPhotosRoute
   '/admin/rooms': typeof AuthenticatedAdminRoomsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -137,13 +163,16 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rooms': typeof RoomsRouteWithChildren
   '/_authenticated/add-guest': typeof AuthenticatedAddGuestRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/my-bookings': typeof AuthenticatedMyBookingsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/rooms/$id': typeof RoomsIdRoute
   '/rooms/': typeof RoomsIndexRoute
+  '/_authenticated/admin/photos': typeof AuthenticatedAdminPhotosRoute
   '/_authenticated/admin/rooms': typeof AuthenticatedAdminRoomsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -155,13 +184,16 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/reset-password'
     | '/rooms'
     | '/add-guest'
     | '/admin'
+    | '/change-password'
     | '/my-bookings'
     | '/staff'
     | '/rooms/$id'
     | '/rooms/'
+    | '/admin/photos'
     | '/admin/rooms'
     | '/admin/settings'
     | '/admin/users'
@@ -171,11 +203,14 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/reset-password'
     | '/add-guest'
+    | '/change-password'
     | '/my-bookings'
     | '/staff'
     | '/rooms/$id'
     | '/rooms'
+    | '/admin/photos'
     | '/admin/rooms'
     | '/admin/settings'
     | '/admin/users'
@@ -186,13 +221,16 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/about'
     | '/auth'
+    | '/reset-password'
     | '/rooms'
     | '/_authenticated/add-guest'
     | '/_authenticated/admin'
+    | '/_authenticated/change-password'
     | '/_authenticated/my-bookings'
     | '/_authenticated/staff'
     | '/rooms/$id'
     | '/rooms/'
+    | '/_authenticated/admin/photos'
     | '/_authenticated/admin/rooms'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/users'
@@ -204,6 +242,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RoomsRoute: typeof RoomsRouteWithChildren
 }
 
@@ -214,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/rooms'
       fullPath: '/rooms'
       preLoaderRoute: typeof RoomsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -272,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMyBookingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/change-password': {
+      id: '/_authenticated/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -314,10 +367,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRoomsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/photos': {
+      id: '/_authenticated/admin/photos'
+      path: '/photos'
+      fullPath: '/admin/photos'
+      preLoaderRoute: typeof AuthenticatedAdminPhotosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminPhotosRoute: typeof AuthenticatedAdminPhotosRoute
   AuthenticatedAdminRoomsRoute: typeof AuthenticatedAdminRoomsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -325,6 +386,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminPhotosRoute: AuthenticatedAdminPhotosRoute,
   AuthenticatedAdminRoomsRoute: AuthenticatedAdminRoomsRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
@@ -337,6 +399,7 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAddGuestRoute: typeof AuthenticatedAddGuestRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedMyBookingsRoute: typeof AuthenticatedMyBookingsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
 }
@@ -344,6 +407,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAddGuestRoute: AuthenticatedAddGuestRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedMyBookingsRoute: AuthenticatedMyBookingsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
 }
@@ -368,6 +432,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RoomsRoute: RoomsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
