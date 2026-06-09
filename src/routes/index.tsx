@@ -39,7 +39,7 @@ function HomePage() {
       {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <img src={heroImg} alt="Aurelia hotel lobby at sunset" width={1920} height={1080} className="h-full w-full object-cover" />
+          <img src={settings.hero_image_url || heroImg} alt="Aurelia hotel lobby at sunset" width={1920} height={1080} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/10 to-background" />
         </div>
         <div className="container-narrow flex min-h-[78vh] flex-col items-start justify-end pb-20 pt-32">

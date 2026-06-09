@@ -76,7 +76,26 @@ function AuthPage() {
           <TabsContent value="signin">
             <form onSubmit={handleSignIn} className="mt-4 space-y-4">
               <div><Label>Email</Label><Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div><Label>Password</Label><Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <Label>Password</Label>
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline-offset-4 hover:underline"
+                    onClick={async () => {
+                      if (!email) return toast.error("Enter your email above first.");
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      });
+                      if (error) toast.error(error.message);
+                      else toast.success("Password reset email sent.");
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
               <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                 {loading ? "Signing in…" : "Sign in"}
               </Button>

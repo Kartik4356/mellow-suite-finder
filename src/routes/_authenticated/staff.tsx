@@ -14,13 +14,14 @@ export const Route = createFileRoute("/_authenticated/staff")({
 });
 
 const STATUSES = ["pending", "confirmed", "checked_in", "checked_out", "cancelled"] as const;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function StaffPage() {
   const { isStaff, loading } = useAuth();
   const settings = useSettings();
   const qc = useQueryClient();
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: allBookings, isLoading } = useQuery({
     queryKey: ["all_bookings"],
     queryFn: async () => {
       const { data } = await supabase
@@ -50,24 +51,31 @@ function StaffPage() {
     </div>
   );
 
+  // Hide checked_out / cancelled rows older than 1 day
+  const now = Date.now();
+  const bookings = (allBookings ?? []).filter((b: any) => {
+    if (b.status !== "checked_out" && b.status !== "cancelled") return true;
+    const t = new Date(b.updated_at ?? b.created_at).getTime();
+    return now - t < DAY_MS;
+  });
+
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("bookings").update({ status: status as any }).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Booking updated."); qc.invalidateQueries({ queryKey: ["all_bookings"] }); }
   };
 
-  const counts = (bookings ?? []).reduce<Record<string, number>>((acc, b: any) => {
+  const counts = bookings.reduce<Record<string, number>>((acc, b: any) => {
     acc[b.status] = (acc[b.status] ?? 0) + 1; return acc;
   }, {});
 
   const today = new Date().toISOString().slice(0, 10);
   const occupiedRoomIds = new Set(
-    (bookings ?? [])
+    bookings
       .filter((b: any) => (b.status === "checked_in" || b.status === "confirmed") && b.check_in <= today && b.check_out > today)
       .map((b: any) => b.room_id)
   );
 
-  // Group rooms by type (name) with vacancy counts
   const byType = new Map<string, { total: number; vacant: number; price: number }>();
   for (const r of rooms ?? []) {
     const t = byType.get(r.name) ?? { total: 0, vacant: 0, price: Number(r.price_per_night) };
@@ -120,7 +128,11 @@ function StaffPage() {
         ))}
       </div>
 
-      <div className="mt-10 overflow-x-auto rounded-lg border border-border bg-card">
+      <p className="mt-4 text-xs text-muted-foreground">
+        Checked-out and cancelled bookings are hidden automatically 24 hours after their status change.
+      </p>
+
+      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-secondary/40 text-left">
             <tr>
@@ -133,7 +145,7 @@ function StaffPage() {
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={5} className="p-6 text-muted-foreground">Loading…</td></tr>}
-            {bookings?.map((b: any) => (
+            {bookings.map((b: any) => (
               <tr key={b.id} className="border-b border-border last:border-0">
                 <td className="p-3">
                   <div className="font-medium">{b.guest_name}</div>
