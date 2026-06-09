@@ -80,61 +80,149 @@ function AdminRooms() {
     qc.invalidateQueries({ queryKey: ["admin_rooms"] });
   };
 
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h2 className="font-serif text-2xl">Rooms</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditing({ ...empty })} className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" /> New room
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle className="font-serif text-2xl">{editing?.id ? "Edit room" : "New room"}</DialogTitle></DialogHeader>
-            {editing && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2"><Label>Name</Label><Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
-                <div className="sm:col-span-2"><Label>Description</Label><Textarea rows={3} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
-                <div><Label>Price / night</Label><Input type="number" value={editing.price_per_night} onChange={(e) => setEditing({ ...editing, price_per_night: Number(e.target.value) })} /></div>
-                <div><Label>Capacity</Label><Input type="number" value={editing.capacity} onChange={(e) => setEditing({ ...editing, capacity: Number(e.target.value) })} /></div>
-                <div><Label>Bed type</Label><Input value={editing.bed_type} onChange={(e) => setEditing({ ...editing, bed_type: e.target.value })} /></div>
-                <div><Label>Size (m²)</Label><Input type="number" value={editing.size_sqm} onChange={(e) => setEditing({ ...editing, size_sqm: Number(e.target.value) })} /></div>
-                <div className="sm:col-span-2"><Label>Image URL</Label><Input value={editing.image_url} onChange={(e) => setEditing({ ...editing, image_url: e.target.value })} placeholder="/src/assets/room-classic.jpg or https://…" /></div>
-                <div className="sm:col-span-2"><Label>Amenities (comma-separated)</Label><Input value={editing.amenities} onChange={(e) => setEditing({ ...editing, amenities: e.target.value })} /></div>
-                <div className="flex items-center gap-3 sm:col-span-2"><Switch checked={editing.is_active} onCheckedChange={(v) => setEditing({ ...editing, is_active: v })} /><Label>Active (bookable)</Label></div>
-                <div className="flex justify-end gap-2 sm:col-span-2">
-                  <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                  <Button onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
+  // Group by type
+  const byType = (() => {
+    const m = new Map<string, { total: number; active: number; rows: any[] }>();
+    for (const r of rooms ?? []) {
+      const cur = m.get(r.name) ?? { total: 0, active: 0, rows: [] };
+      cur.total += 1;
+      if (r.is_active) cur.active += 1;
+      cur.rows.push(r);
+      m.set(r.name, cur);
+    }
+    return Array.from(m.entries()).map(([name, v]) => ({ name, ...v }));
+  })();
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border bg-secondary/40 text-left">
-            <tr><th className="p-3">Name</th><th className="p-3">Price</th><th className="p-3">Capacity</th><th className="p-3">Active</th><th className="p-3"></th></tr>
-          </thead>
-          <tbody>
-            {rooms?.map((r: any) => (
-              <tr key={r.id} className="border-b border-border last:border-0">
-                <td className="p-3 font-medium">{r.name}</td>
-                <td className="p-3">{formatCurrency(r.price_per_night, settings.currency)}</td>
-                <td className="p-3">{r.capacity}</td>
-                <td className="p-3">{r.is_active ? "Yes" : "No"}</td>
-                <td className="p-3 text-right">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing({ ...r, amenities: (r.amenities ?? []).join(", "), size_sqm: r.size_sqm ?? 0, image_url: r.image_url ?? "" }); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => remove(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  const setTotalForType = async (name: string, desired: number) => {
+    const group = byType.find((g) => g.name === name);
+    if (!group) return;
+    if (desired < 0 || isNaN(desired)) return toast.error("Enter a valid number.");
+    const diff = desired - group.total;
+    if (diff === 0) return toast.info("No change.");
+
+    if (diff > 0) {
+      // Clone a template row
+      const tpl = group.rows[0];
+      const inserts = Array.from({ length: diff }).map(() => ({
+        name: tpl.name,
+        description: tpl.description,
+        price_per_night: tpl.price_per_night,
+        capacity: tpl.capacity,
+        bed_type: tpl.bed_type,
+        size_sqm: tpl.size_sqm,
+        image_url: tpl.image_url,
+        amenities: tpl.amenities ?? [],
+        is_active: true,
+      }));
+      const { error } = await supabase.from("rooms").insert(inserts);
+      if (error) return toast.error(error.message);
+    } else {
+      // Remove |diff| rooms — prefer those without bookings (safest: pick most recent)
+      const toDelete = group.rows.slice(0, Math.abs(diff)).map((r) => r.id);
+      const { error } = await supabase.from("rooms").delete().in("id", toDelete);
+      if (error) return toast.error(`${error.message} (rooms with bookings cannot be deleted)`);
+    }
+    toast.success(`Inventory updated for ${name}.`);
+    qc.invalidateQueries({ queryKey: ["admin_rooms"] });
+    qc.invalidateQueries({ queryKey: ["rooms"] });
+  };
+
+  return (
+    <div className="space-y-10">
+      {/* Inventory by type */}
+      <section className="rounded-lg border border-border bg-card p-6">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <h2 className="font-serif text-2xl">Room inventory</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Set how many rooms of each type your property has.</p>
+          </div>
+          <p className="text-sm text-muted-foreground">Total: <span className="font-medium text-foreground">{rooms?.length ?? 0}</span></p>
+        </div>
+        {byType.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">No rooms yet. Use "New room" below to create your first room type.</p>
+        ) : (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {byType.map((t) => <InventoryRow key={t.name} type={t} onSet={setTotalForType} />)}
+          </div>
+        )}
+      </section>
+
+      {/* Rooms list */}
+      <section>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-serif text-2xl">Rooms</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Detailed listing — edit pricing, amenities and activation.</p>
+          </div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditing({ ...empty })} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="mr-2 h-4 w-4" /> New room
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle className="font-serif text-2xl">{editing?.id ? "Edit room" : "New room"}</DialogTitle></DialogHeader>
+              {editing && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2"><Label>Name (room type)</Label><Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
+                  <div className="sm:col-span-2"><Label>Description</Label><Textarea rows={3} value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></div>
+                  <div><Label>Price / night</Label><Input type="number" value={editing.price_per_night} onChange={(e) => setEditing({ ...editing, price_per_night: Number(e.target.value) })} /></div>
+                  <div><Label>Capacity</Label><Input type="number" value={editing.capacity} onChange={(e) => setEditing({ ...editing, capacity: Number(e.target.value) })} /></div>
+                  <div><Label>Bed type</Label><Input value={editing.bed_type} onChange={(e) => setEditing({ ...editing, bed_type: e.target.value })} /></div>
+                  <div><Label>Size (m²)</Label><Input type="number" value={editing.size_sqm} onChange={(e) => setEditing({ ...editing, size_sqm: Number(e.target.value) })} /></div>
+                  <div className="sm:col-span-2"><Label>Image URL</Label><Input value={editing.image_url} onChange={(e) => setEditing({ ...editing, image_url: e.target.value })} placeholder="https://…" /></div>
+                  <div className="sm:col-span-2"><Label>Amenities (comma-separated)</Label><Input value={editing.amenities} onChange={(e) => setEditing({ ...editing, amenities: e.target.value })} /></div>
+                  <div className="flex items-center gap-3 sm:col-span-2"><Switch checked={editing.is_active} onCheckedChange={(v) => setEditing({ ...editing, is_active: v })} /><Label>Active (bookable)</Label></div>
+                  <div className="flex justify-end gap-2 sm:col-span-2">
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={save} className="bg-primary text-primary-foreground hover:bg-primary/90">Save</Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-card">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border bg-secondary/40 text-left">
+              <tr><th className="p-3">Name</th><th className="p-3">Price</th><th className="p-3">Capacity</th><th className="p-3">Active</th><th className="p-3"></th></tr>
+            </thead>
+            <tbody>
+              {rooms?.map((r: any) => (
+                <tr key={r.id} className="border-b border-border last:border-0">
+                  <td className="p-3 font-medium">{r.name}</td>
+                  <td className="p-3">{formatCurrency(r.price_per_night, settings.currency)}</td>
+                  <td className="p-3">{r.capacity}</td>
+                  <td className="p-3">{r.is_active ? "Yes" : "No"}</td>
+                  <td className="p-3 text-right">
+                    <Button variant="ghost" size="sm" onClick={() => { setEditing({ ...r, amenities: (r.amenities ?? []).join(", "), size_sqm: r.size_sqm ?? 0, image_url: r.image_url ?? "" }); setOpen(true); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => remove(r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function InventoryRow({ type, onSet }: { type: { name: string; total: number; active: number }; onSet: (name: string, n: number) => void }) {
+  const [val, setVal] = useState(type.total.toString());
+  return (
+    <div className="rounded-md border border-border p-4">
+      <div className="flex items-center justify-between">
+        <p className="font-medium">{type.name}</p>
+        <span className="text-xs text-muted-foreground">{type.active} active</span>
+      </div>
+      <p className="mt-2 font-serif text-3xl">{type.total}<span className="ml-1 text-base text-muted-foreground">rooms</span></p>
+      <div className="mt-3 flex gap-2">
+        <Input type="number" min={0} value={val} onChange={(e) => setVal(e.target.value)} className="h-8" />
+        <Button size="sm" variant="outline" onClick={() => onSet(type.name, Number(val))}>Update</Button>
       </div>
     </div>
   );

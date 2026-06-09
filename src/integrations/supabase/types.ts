@@ -16,9 +16,13 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          about_image_url: string | null
           currency: string
+          extra_images: Json
+          hero_image_url: string | null
           hotel_name: string
           id: string
+          logo_url: string | null
           subscription_plan: string
           tagline: string
           theme_accent: string
@@ -27,9 +31,13 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          about_image_url?: string | null
           currency?: string
+          extra_images?: Json
+          hero_image_url?: string | null
           hotel_name?: string
           id?: string
+          logo_url?: string | null
           subscription_plan?: string
           tagline?: string
           theme_accent?: string
@@ -38,9 +46,13 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          about_image_url?: string | null
           currency?: string
+          extra_images?: Json
+          hero_image_url?: string | null
           hotel_name?: string
           id?: string
+          logo_url?: string | null
           subscription_plan?: string
           tagline?: string
           theme_accent?: string
@@ -112,6 +124,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          must_change_password: boolean
           phone: string | null
           updated_at: string
         }
@@ -120,6 +133,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          must_change_password?: boolean
           phone?: string | null
           updated_at?: string
         }
@@ -128,6 +142,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          must_change_password?: boolean
           phone?: string | null
           updated_at?: string
         }

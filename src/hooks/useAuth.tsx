@@ -9,11 +9,13 @@ interface AuthContextValue {
   session: Session | null;
   roles: AppRole[];
   loading: boolean;
+  mustChangePassword: boolean;
   hasRole: (r: AppRole) => boolean;
   isStaff: boolean;
   isAdmin: boolean;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -21,24 +23,29 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [mustChange, setMustChange] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadRoles = async (uid: string) => {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-    setRoles((data ?? []).map((r) => r.role as AppRole));
+    const [{ data: r }, { data: p }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+      supabase.from("profiles").select("must_change_password").eq("id", uid).maybeSingle(),
+    ]);
+    setRoles((r ?? []).map((x) => x.role as AppRole));
+    setMustChange(Boolean(p?.must_change_password));
   };
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       if (s?.user) {
-        // Defer to avoid deadlocks
         setLoading(true);
         setTimeout(() => {
           loadRoles(s.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
         setRoles([]);
+        setMustChange(false);
         setLoading(false);
       }
     });
@@ -56,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     roles,
     loading,
+    mustChangePassword: mustChange,
     hasRole: (r) => roles.includes(r),
     isStaff: roles.includes("admin") || roles.includes("employee"),
     isAdmin: roles.includes("admin"),
@@ -63,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
     },
     refreshRoles: async () => {
+      if (user) await loadRoles(user.id);
+    },
+    refreshProfile: async () => {
       if (user) await loadRoles(user.id);
     },
   };

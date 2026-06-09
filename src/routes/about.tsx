@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useSettings } from "@/hooks/useSettings";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -11,13 +12,21 @@ export const Route = createFileRoute("/about")({
 });
 
 function AboutPage() {
+  const settings = useSettings();
   return (
     <div className="container-narrow max-w-3xl py-20">
       <p className="eyebrow">Our story</p>
       <h1 className="mt-2 font-serif text-5xl">A house, not a brand.</h1>
+      {settings.about_image_url && (
+        <img
+          src={settings.about_image_url}
+          alt="About the hotel"
+          className="mt-8 aspect-[16/9] w-full rounded-lg border border-border object-cover"
+        />
+      )}
       <div className="mt-10 space-y-6 text-lg leading-relaxed text-foreground/85">
         <p>
-          Aurelia began as a single restored townhouse — a quiet experiment in what hospitality could feel like when stripped of excess.
+          {settings.hotel_name} began as a single restored townhouse — a quiet experiment in what hospitality could feel like when stripped of excess.
           Today, our rooms still carry that intent: hand-finished, generously proportioned, and arranged for repose.
         </p>
         <p>
@@ -25,7 +34,7 @@ function AboutPage() {
           remembered. Our staff are trained to anticipate, not to perform.
         </p>
         <p>
-          Whether you stay a single night or a quiet week, we hope to make Aurelia feel like the house of a generous friend — one who
+          Whether you stay a single night or a quiet week, we hope to make {settings.hotel_name} feel like the house of a generous friend — one who
           has thought, in advance, of everything.
         </p>
       </div>

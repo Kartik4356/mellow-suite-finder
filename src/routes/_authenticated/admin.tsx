@@ -10,6 +10,7 @@ const tabs = [
   { to: "/admin", label: "Overview", exact: true },
   { to: "/admin/rooms", label: "Rooms" },
   { to: "/admin/users", label: "Users & Roles" },
+  { to: "/admin/photos", label: "Photos" },
   { to: "/admin/settings", label: "Settings" },
 ];
 

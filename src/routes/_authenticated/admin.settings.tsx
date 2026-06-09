@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,17 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+import { Check, KeyRound } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   component: AdminSettings,
 });
-
-const PLANS = [
-  { id: "starter", name: "Starter", price: "$49/mo", features: ["Up to 20 rooms", "Email support", "Basic analytics"] },
-  { id: "professional", name: "Professional", price: "$149/mo", features: ["Up to 100 rooms", "Priority support", "Advanced analytics", "Channel sync"] },
-  { id: "enterprise", name: "Enterprise", price: "Contact us", features: ["Unlimited rooms", "Dedicated manager", "Custom integrations", "SLA"] },
-];
 
 const PALETTES = [
   { name: "Bronze & Gold", primary: "#8b6f47", accent: "#c9a86a" },
@@ -35,26 +29,6 @@ function AdminSettings() {
       return data;
     },
   });
-
-  const { data: roomsList } = useQuery({
-    queryKey: ["admin_rooms_summary"],
-    queryFn: async () => {
-      const { data } = await supabase.from("rooms").select("id,name,is_active");
-      return data ?? [];
-    },
-  });
-
-  const roomTypes = (() => {
-    const map = new Map<string, { total: number; active: number }>();
-    for (const r of roomsList ?? []) {
-      const cur = map.get(r.name) ?? { total: 0, active: 0 };
-      cur.total += 1;
-      if (r.is_active) cur.active += 1;
-      map.set(r.name, cur);
-    }
-    return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
-  })();
-  const totalRooms = roomsList?.length ?? 0;
 
   const [form, setForm] = useState<any>(null);
   useEffect(() => { if (settings) setForm(settings); }, [settings]);
@@ -82,34 +56,6 @@ function AdminSettings() {
           onClick={() => save({ hotel_name: form.hotel_name, tagline: form.tagline, currency: form.currency })}>
           Save branding
         </Button>
-
-        <div className="mt-8 border-t border-border pt-6">
-          <div className="flex items-baseline justify-between">
-            <h3 className="font-serif text-xl">Room inventory</h3>
-            <p className="text-sm text-muted-foreground">Total rooms: <span className="font-medium text-foreground">{totalRooms}</span></p>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">Overview of room types and counts in your property.</p>
-          {roomTypes.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">No rooms yet. Add rooms from the Rooms tab.</p>
-          ) : (
-            <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
-                <thead className="border-b border-border bg-secondary/40 text-left">
-                  <tr><th className="p-3">Room type</th><th className="p-3">Total</th><th className="p-3">Active</th></tr>
-                </thead>
-                <tbody>
-                  {roomTypes.map((t) => (
-                    <tr key={t.name} className="border-b border-border last:border-0">
-                      <td className="p-3 font-medium">{t.name}</td>
-                      <td className="p-3">{t.total}</td>
-                      <td className="p-3">{t.active}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       </section>
 
       {/* Theme */}
@@ -140,34 +86,13 @@ function AdminSettings() {
         </div>
       </section>
 
-      {/* Subscription */}
+      {/* Security */}
       <section className="rounded-lg border border-border bg-card p-6">
-        <h2 className="font-serif text-2xl">Subscription plan</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Choose the plan that fits your property. Billing is mocked in this preview.</p>
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          {PLANS.map((p) => {
-            const active = form.subscription_plan === p.id;
-            return (
-              <div key={p.id} className={`rounded-lg border p-5 ${active ? "border-primary bg-secondary/40" : "border-border"}`}>
-                <div className="flex items-baseline justify-between">
-                  <h3 className="font-serif text-xl">{p.name}</h3>
-                  <p className="text-sm text-muted-foreground">{p.price}</p>
-                </div>
-                <ul className="mt-3 space-y-1 text-sm">
-                  {p.features.map((f) => <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-accent" /> {f}</li>)}
-                </ul>
-                <Button
-                  className={`mt-4 w-full ${active ? "" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
-                  variant={active ? "outline" : "default"}
-                  disabled={active}
-                  onClick={() => { setForm({ ...form, subscription_plan: p.id }); save({ subscription_plan: p.id }); }}
-                >
-                  {active ? "Current plan" : "Switch to " + p.name}
-                </Button>
-              </div>
-            );
-          })}
-        </div>
+        <h2 className="font-serif text-2xl">Security</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Change your administrator password at any time.</p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to="/change-password"><KeyRound className="mr-2 h-4 w-4" /> Change password</Link>
+        </Button>
       </section>
     </div>
   );

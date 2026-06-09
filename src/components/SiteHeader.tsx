@@ -27,7 +27,10 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="container-narrow flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-baseline gap-2">
+        <Link to="/" className="flex items-center gap-3">
+          {settings.logo_url && (
+            <img src={settings.logo_url} alt={settings.hotel_name} className="h-8 w-auto" />
+          )}
           <span className="font-serif text-2xl font-medium tracking-tight">{settings.hotel_name}</span>
           <span className="hidden text-[10px] uppercase tracking-[0.25em] text-muted-foreground sm:inline">
             est. mmxxv
